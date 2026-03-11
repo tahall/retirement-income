@@ -378,7 +378,7 @@ function toggleSpousalNote(){
   const checked = document.getElementById('spSpousalBenefit').checked;
   document.getElementById('spousalNote').style.display = checked ? '' : 'none';
   if(checked){
-    const ss67val = parseFloat(document.getElementById('ss67').value) || 0;
+    const ss67val = parseDollar(document.getElementById('ss67').value);
     document.getElementById('spousalAmt').textContent =
       '$' + Math.round(ss67val * 0.5).toLocaleString();
   }
@@ -442,6 +442,12 @@ function calculate(){
   const spSpousalBenefit = hasSpouse && g('spSpousalBenefit').checked;
   const spousalBenefitAmt = ss67 * 0.5; // 50% of primary's FRA benefit
 
+  // Spousal benefit starts the later of: spouse's claiming age, primary's claiming age
+  // Expressed as years from 2026
+  const spSsStartYr  = hasSpouse && spAge !== null ? Math.max(0, spSsAge - spAge) : Infinity;
+  const primClaimYr  = Math.max(0, ssAge - personAge);
+  const spousalStartYr = Math.max(spSsStartYr, primClaimYr);
+
   // Lookup SS base amounts
   const ssBases = {62:ss62, 67:ss67, 70:ss70};
   const ssBase = ssBases[ssAge] || 0;
@@ -498,13 +504,11 @@ function calculate(){
       if(spCurrentAge >= spSsAge && spSsBase > 0){
         ownBenefit = spSsBase * Math.pow(1 + ssColaRate, spCurrentAge - spSsAge);
       }
-      // Spousal benefit: 50% of primary's FRA (age-67) benefit, with COLA from primary's claim age
-      // Does not grow by delaying past spouse's FRA — use spousalBenefitAmt as the base
+      // Spousal benefit: 50% of primary's FRA benefit, COLA starts from when it first becomes
+      // available (the later of spouse's claiming age and primary's claiming age)
       let spousalInc = 0;
-      if(spSpousalBenefit && spCurrentAge >= spSsAge && age >= ssAge){
-        // Spousal benefit receives same COLA adjustments from the year it becomes available
-        const yearsOfCola = spCurrentAge - spSsAge;
-        spousalInc = spousalBenefitAmt * Math.pow(1 + ssColaRate, yearsOfCola);
+      if(spSpousalBenefit && yr >= spousalStartYr){
+        spousalInc = spousalBenefitAmt * Math.pow(1 + ssColaRate, yr - spousalStartYr);
       }
       spSsInc = spSpousalBenefit ? Math.max(ownBenefit, spousalInc) : ownBenefit;
     }
