@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Income Calculator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh}
+header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:1.75rem 2rem;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+header h1{font-size:1.9rem;font-weight:700;margin-bottom:.4rem}
+header p{opacity:.85;font-size:.95rem}
+.container{max-width:1500px;margin:1.75rem auto;padding:0 1rem}
+.card{background:white;border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.card-title{font-size:1.05rem;font-weight:600;color:#1e40af;border-bottom:2px solid #e2e8f0;padding-bottom:.65rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:.5rem}
+.sub-title{font-size:.9rem;font-weight:600;color:#475569;border-bottom:1px solid #e2e8f0;padding-bottom:.5rem;margin:1.1rem 0 .85rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:700px){.grid-2{grid-template-columns:1fr}}
+.fg{display:flex;flex-direction:column;gap:.3rem}
+label{font-size:.82rem;font-weight:500;color:#475569}
+input[type=number],input[type=text],select{padding:.55rem .7rem;border:1.5px solid #e2e8f0;border-radius:7px;font-size:.9rem;color:#1e293b;background:#f8fafc;width:100%;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);background:white}
+.pfx{position:relative}.pfx span{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem;pointer-events:none}
+.pfx input{padding-left:1.4rem}
+.sfx{position:relative}.sfx span{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.9rem;pointer-events:none}
+.sfx input{padding-right:1.75rem}
+.note{font-size:.75rem;color:#94a3b8;font-style:italic}
+.toggle-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.25rem}
+.sw{position:relative;width:42px;height:23px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#cbd5e1;transition:.25s;border-radius:23px}
+.sw-slider:before{position:absolute;content:"";height:17px;width:17px;left:3px;bottom:3px;background:white;transition:.25s;border-radius:50%}
+.sw input:checked+.sw-slider{background:#3b82f6}
+.sw input:checked+.sw-slider:before{transform:translateX(19px)}
+.radio-row{display:flex;gap:1.25rem;flex-wrap:wrap;align-items:center;margin-bottom:.85rem}
+.ro{display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer}
+.ro input[type=radio]{width:auto;height:auto;padding:0;border:none;background:none;accent-color:#3b82f6}
+.btn-calc{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;border:none;padding:.9rem 2.5rem;font-size:1.05rem;font-weight:600;border-radius:10px;cursor:pointer;display:block;margin:0 auto 1.75rem;box-shadow:0 4px 14px rgba(59,130,246,.4);transition:opacity .2s,transform .1s}
+.btn-calc:hover{opacity:.92;transform:translateY(-1px)}
+.btn-calc:active{transform:translateY(0)}
+.results{display:none}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem;margin-bottom:1.25rem}
+.sum-card{background:white;border-radius:10px;padding:1.1rem;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.1);border-top:3px solid #3b82f6}
+.sum-card .sv{font-size:1.35rem;font-weight:700;color:#1e40af;margin-bottom:.2rem}
+.sum-card .sl{font-size:.75rem;color:#64748b}
+.tbl-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+table{width:100%;border-collapse:collapse;background:white;font-size:.82rem}
+thead th{background:#1e40af;color:white;padding:.75rem .9rem;text-align:right;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:10}
+thead th.tc{text-align:center}
+tbody tr:nth-child(even){background:#f8fafc}
+tbody tr:hover{background:#eff6ff}
+tbody td{padding:.65rem .9rem;text-align:right;border-bottom:1px solid #f1f5f9;white-space:nowrap}
+tbody td.tc{text-align:center;font-weight:600}
+tbody td.hi{background:#fef3c7!important}
+tbody tr.age70{border-top:3px solid #3b82f6}
+.col-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.cbtn{padding:.3rem .7rem;border:1.5px solid #3b82f6;border-radius:18px;font-size:.78rem;cursor:pointer;background:white;color:#3b82f6;transition:all .15s}
+.cbtn.on{background:#3b82f6;color:white}
+.info-box{background:#eff6ff;border-left:4px solid #3b82f6;padding:.85rem 1rem;border-radius:0 8px 8px 0;font-size:.8rem;color:#1e40af;margin-top:.85rem}
+.warn-box{background:#fffbeb;border-left:4px solid #f59e0b;padding:.85rem 1rem;border-radius:0 8px 8px 0;font-size:.78rem;color:#92400e;margin-top:.85rem}
+.zero{color:#94a3b8}
+.depleted{color:#ef4444;font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <h1>Retirement Income Calculator</h1>
+  <p>Year-by-year income projection through age 100</p>
+</header>
+
+<div class="container">
+
+<!-- PRIMARY PERSON -->
+<div class="card">
+  <div class="card-title">&#128100; Primary Person</div>
+  <div class="grid">
+    <div class="fg">
+      <label for="personAge">Age in 2026</label>
+      <input type="number" id="personAge" min="18" max="99" value="55">
+    </div>
+    <div class="fg">
+      <label for="pension">Annual Pension</label>
+      <div class="pfx"><span>$</span><input type="number" id="pension" min="0" value="0"></div>
+    </div>
+    <div class="fg">
+      <label for="pensionStart">Pension Starts at Age</label>
+      <input type="number" id="pensionStart" min="40" max="80" value="62">
+    </div>
+    <div class="fg">
+      <label>Pension COLA</label>
+      <label class="ro" style="margin-top:.55rem">
+        <input type="checkbox" id="pensionCola"> Adjusts for inflation
+      </label>
+    </div>
+  </div>
+
+  <div class="sub-title">Social Security Benefits (Annual Amount)</div>
+  <div class="grid">
+    <div class="fg">
+      <label for="ss62">SS Benefit if Claimed at 62</label>
+      <div class="pfx"><span>$</span><input type="number" id="ss62" min="0" value="0"></div>
+    </div>
+    <div class="fg">
+      <label for="ss67">SS Benefit if Claimed at 67</label>
+      <div class="pfx"><span>$</span><input type="number" id="ss67" min="0" value="0"></div>
+    </div>
+    <div class="fg">
+      <label for="ss70">SS Benefit if Claimed at 70</label>
+      <div class="pfx"><span>$</span><input type="number" id="ss70" min="0" value="0"></div>
+    </div>
+    <div class="fg">
+      <label for="ssAge">Planned Claiming Age</label>
+      <select id="ssAge">
+        <option value="62">62 — earliest</option>
+        <option value="67" selected>67 — full retirement age</option>
+        <option value="70">70 — maximum benefit</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- INVESTMENT ACCOUNTS -->
+<div class="card">
+  <div class="card-title">&#128188; Investment Accounts (Current Balances)</div>
+  <div class="grid">
+    <div class="fg">
+      <label for="traditional">Traditional IRA / 401(k)</label>
+      <div class="pfx"><span>$</span><input type="number" id="traditional" min="0" value="0"></div>
+      <span class="note">Pre-tax · subject to RMDs</span>
+    </div>
+    <div class="fg">
+      <label for="roth">Roth IRA / 401(k)</label>
+      <div class="pfx"><span>$</span><input type="number" id="roth" min="0" value="0"></div>
+      <span class="note">After-tax · no RMDs</span>
+    </div>
+    <div class="fg">
+      <label for="taxable">Taxable Brokerage</label>
+      <div class="pfx"><span>$</span><input type="number" id="taxable" min="0" value="0"></div>
+      <span class="note">After-tax · gains taxed on sale</span>
+    </div>
+  </div>
+</div>
+
+<!-- ASSUMPTIONS -->
+<div class="card">
+  <div class="card-title">&#9881;&#65039; Assumptions &amp; Withdrawals</div>
+  <div class="grid">
+    <div class="fg">
+      <label for="returnRate">Annual Investment Return</label>
+      <div class="sfx"><input type="number" id="returnRate" min="0" max="20" step="0.1" value="6"><span>%</span></div>
+    </div>
+    <div class="fg">
+      <label for="inflRate">Inflation Rate</label>
+      <div class="sfx"><input type="number" id="inflRate" min="0" max="15" step="0.1" value="2.5"><span>%</span></div>
+    </div>
+    <div class="fg">
+      <label for="ssCola">Social Security COLA</label>
+      <div class="sfx"><input type="number" id="ssCola" min="0" max="15" step="0.1" value="2.5"><span>%</span></div>
+    </div>
+    <div class="fg">
+      <label for="filingStatus">Tax Filing Status</label>
+      <select id="filingStatus">
+        <option value="single">Single</option>
+        <option value="mfj" selected>Married Filing Jointly</option>
+        <option value="hoh">Head of Household</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="sub-title">Annual Withdrawal from Investments</div>
+  <div class="radio-row">
+    <label class="ro"><input type="radio" name="wdType" value="fixed" id="wdFixed" checked onchange="updateWdUI()"> Fixed Amount (inflation-adjusted)</label>
+    <label class="ro"><input type="radio" name="wdType" value="rate" id="wdRate" onchange="updateWdUI()"> Safe Withdrawal Rate</label>
+    <label class="ro"><input type="radio" name="wdType" value="rmd" id="wdRmd" onchange="updateWdUI()"> RMDs Only</label>
+  </div>
+  <div class="grid">
+    <div class="fg" id="wdAmtGrp">
+      <label for="wdAmt">Annual Withdrawal</label>
+      <div class="pfx"><span>$</span><input type="number" id="wdAmt" min="0" value="40000"></div>
+    </div>
+    <div class="fg" id="wdRateGrp" style="display:none">
+      <label for="wdPct">Withdrawal Rate</label>
+      <div class="sfx"><input type="number" id="wdPct" min="0" max="20" step="0.1" value="4"><span>%</span></div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    Withdrawals use tax-efficient ordering: <strong>Taxable → Roth → Traditional</strong> (beyond RMDs).
+    RMDs begin at age&nbsp;73 (born 1951–1959) or age&nbsp;75 (born 1960+) per SECURE Act 2.0.
+  </div>
+</div>
+
+<!-- SPOUSE -->
+<div class="card">
+  <div class="card-title">
+    &#128101; Spouse / Partner
+    <span style="margin-left:auto;display:flex;align-items:center;gap:.6rem;font-weight:400;font-size:.85rem;color:#64748b">
+      <label class="sw"><input type="checkbox" id="spouseOn" onchange="toggleSpouse()"><span class="sw-slider"></span></label>
+      Include spouse
+    </span>
+  </div>
+  <div id="spouseInputs" style="display:none">
+    <div class="grid">
+      <div class="fg">
+        <label for="spAge">Spouse Age in 2026</label>
+        <input type="number" id="spAge" min="18" max="99" value="53">
+      </div>
+      <div class="fg">
+        <label for="spPension">Annual Pension</label>
+        <div class="pfx"><span>$</span><input type="number" id="spPension" min="0" value="0"></div>
+      </div>
+      <div class="fg">
+        <label for="spPensionStart">Pension Starts at Age</label>
+        <input type="number" id="spPensionStart" min="40" max="80" value="62">
+      </div>
+      <div class="fg">
+        <label>Pension COLA</label>
+        <label class="ro" style="margin-top:.55rem"><input type="checkbox" id="spPensionCola"> Adjusts for inflation</label>
+      </div>
+    </div>
+    <div class="sub-title">Spouse Social Security (Annual Amount)</div>
+    <div class="grid">
+      <div class="fg">
+        <label for="spSs62">SS Benefit at 62</label>
+        <div class="pfx"><span>$</span><input type="number" id="spSs62" min="0" value="0"></div>
+      </div>
+      <div class="fg">
+        <label for="spSs67">SS Benefit at 67</label>
+        <div class="pfx"><span>$</span><input type="number" id="spSs67" min="0" value="0"></div>
+      </div>
+      <div class="fg">
+        <label for="spSs70">SS Benefit at 70</label>
+        <div class="pfx"><span>$</span><input type="number" id="spSs70" min="0" value="0"></div>
+      </div>
+      <div class="fg">
+        <label for="spSsAge">Planned Claiming Age</label>
+        <select id="spSsAge">
+          <option value="62">62 — earliest</option>
+          <option value="67" selected>67 — full retirement age</option>
+          <option value="70">70 — maximum benefit</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="btn-calc" onclick="calculate()">&#9654; Calculate Retirement Income</button>
+
+<!-- RESULTS -->
+<div class="results" id="results">
+  <div class="sum-grid" id="sumGrid"></div>
+
+  <div class="card">
+    <div class="card-title">&#128202; Year-by-Year Projection</div>
+    <div class="col-bar" id="colBar">
+      <span style="font-size:.8rem;color:#64748b;align-self:center">Columns:</span>
+      <button class="cbtn on" data-col="pension" onclick="toggleCol(this)">Pension</button>
+      <button class="cbtn on" data-col="ss" onclick="toggleCol(this)">Social Security</button>
+      <button class="cbtn on" data-col="invest" onclick="toggleCol(this)">Investment WD</button>
+      <button class="cbtn on" data-col="total" onclick="toggleCol(this)">Total Income</button>
+      <button class="cbtn on" data-col="tax" onclick="toggleCol(this)">Est. Tax</button>
+      <button class="cbtn on" data-col="aftertax" onclick="toggleCol(this)">After-Tax</button>
+      <button class="cbtn on" data-col="port" onclick="toggleCol(this)">Portfolio</button>
+      <button class="cbtn" data-col="accts" onclick="toggleCol(this)">Account Detail</button>
+      <button class="cbtn" data-col="rmd" onclick="toggleCol(this)">RMD</button>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tbl">
+        <thead id="tHead"></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div class="warn-box">
+      <strong>Disclaimer:</strong> Estimates only. Actual investment returns, inflation, tax laws, and Social Security rules will differ.
+      Federal tax estimates use approximate 2026 brackets with inflation-adjusted standard deductions.
+      Consult a financial advisor and tax professional for personalized guidance.
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ── RMD Uniform Lifetime Table (IRS 2022) ──────────────────────────────────
+const RMD_TABLE = {
+  72:27.4,73:26.5,74:25.5,75:24.6,76:23.7,77:22.9,78:22.0,79:21.1,
+  80:20.2,81:19.4,82:18.5,83:17.7,84:16.8,85:16.0,86:15.2,87:14.4,
+  88:13.7,89:12.9,90:12.2,91:11.5,92:10.8,93:10.1,94:9.5,95:8.9,
+  96:8.4,97:7.8,98:7.3,99:6.8,100:6.4,101:6.0,102:5.6,103:5.2,
+  104:4.9,105:4.6
+};
+function getRmdFactor(age){ return RMD_TABLE[Math.min(age,105)] || 2.9; }
+
+// ── Federal Tax Estimate ───────────────────────────────────────────────────
+// Brackets inflated from 2026 base each year using inflation rate
+const BRACKETS_2026 = {
+  mfj: [[23850,.10],[96950,.12],[206700,.22],[394600,.24],[501050,.32],[751600,.35],[Infinity,.37]],
+  single:[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]],
+  hoh: [[17000,.10],[64850,.12],[103350,.22],[197300,.24],[250500,.32],[626350,.35],[Infinity,.37]]
+};
+const STD_DED_2026 = { mfj:30000, single:15000, hoh:22500 };
+const EXTRA_65 = { mfj:1600, single:2000, hoh:2000 }; // per qualifying person
+
+function estimateTax(taxableIncome, status, inflFactor, age65Count){
+  const infl = inflFactor;
+  const stdDed = (STD_DED_2026[status] + EXTRA_65[status] * age65Count) * infl;
+  const brackets = BRACKETS_2026[status] || BRACKETS_2026.single;
+  let tax = 0;
+  let remaining = Math.max(0, taxableIncome - stdDed);
+  let prevTop = 0;
+  for(const [top, rate] of brackets){
+    const adjTop = top === Infinity ? Infinity : top * infl;
+    const adjPrev = prevTop * infl;
+    const slice = adjTop === Infinity ? remaining : Math.min(remaining, adjTop - adjPrev);
+    if(slice <= 0){ prevTop = top; continue; }
+    tax += slice * rate;
+    remaining -= slice;
+    if(remaining <= 0) break;
+    prevTop = top;
+  }
+  return tax;
+}
+
+// SS provisional income taxation
+function ssTaxableAmount(ssIncome, otherIncome, status){
+  if(ssIncome <= 0) return 0;
+  const t1 = status === 'mfj' ? 32000 : 25000;
+  const t2 = status === 'mfj' ? 44000 : 34000;
+  const provisional = otherIncome + 0.5 * ssIncome;
+  if(provisional <= t1) return 0;
+  if(provisional <= t2) return Math.min(0.5 * ssIncome, 0.5 * (provisional - t1));
+  const base = Math.min(0.5 * ssIncome, 0.5 * (t2 - t1));
+  const extra = 0.85 * (provisional - t2);
+  return Math.min(0.85 * ssIncome, base + extra);
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function toggleSpouse(){
+  document.getElementById('spouseInputs').style.display =
+    document.getElementById('spouseOn').checked ? '' : 'none';
+}
+function updateWdUI(){
+  const v = document.querySelector('input[name=wdType]:checked').value;
+  document.getElementById('wdAmtGrp').style.display  = v === 'fixed' ? '' : 'none';
+  document.getElementById('wdRateGrp').style.display = v === 'rate'  ? '' : 'none';
+}
+function fmt(n, decimals=0){
+  if(n === null || n === undefined) return '—';
+  return '$' + Math.round(n).toLocaleString();
+}
+function fmtPct(n){ return (n*100).toFixed(1)+'%'; }
+
+// ── Column visibility ──────────────────────────────────────────────────────
+function toggleCol(btn){
+  btn.classList.toggle('on');
+  const col = btn.dataset.col;
+  const on = btn.classList.contains('on');
+  document.querySelectorAll('[data-grp='+col+']').forEach(el=>{
+    el.style.display = on ? '' : 'none';
+  });
+}
+
+// ── Main calculation ───────────────────────────────────────────────────────
+function g(id){ return document.getElementById(id); }
+function gv(id, fallback=0){ return parseFloat(g(id).value) || fallback; }
+
+function calculate(){
+  const personAge   = gv('personAge', 55);
+  const pension     = gv('pension');
+  const pensionStart= gv('pensionStart', 62);
+  const pensionCola = g('pensionCola').checked;
+  const ss62  = gv('ss62');
+  const ss67  = gv('ss67');
+  const ss70  = gv('ss70');
+  const ssAge = parseInt(g('ssAge').value);
+  const traditional = gv('traditional');
+  const roth        = gv('roth');
+  const taxable     = gv('taxable');
+  const returnRate  = gv('returnRate', 6) / 100;
+  const inflRate    = gv('inflRate', 2.5) / 100;
+  const ssColaRate  = gv('ssCola', 2.5) / 100;
+  const filingStatus= g('filingStatus').value;
+  const wdType      = document.querySelector('input[name=wdType]:checked').value;
+  const wdAmt       = gv('wdAmt', 0);
+  const wdPct       = gv('wdPct', 4) / 100;
+  const hasSpouse   = g('spouseOn').checked;
+
+  // Spouse
+  const spAge        = hasSpouse ? gv('spAge', 53) : null;
+  const spPension    = hasSpouse ? gv('spPension') : 0;
+  const spPensionStart = hasSpouse ? gv('spPensionStart', 62) : 62;
+  const spPensionCola  = hasSpouse ? g('spPensionCola').checked : false;
+  const spSs62  = hasSpouse ? gv('spSs62') : 0;
+  const spSs67  = hasSpouse ? gv('spSs67') : 0;
+  const spSs70  = hasSpouse ? gv('spSs70') : 0;
+  const spSsAge = hasSpouse ? parseInt(g('spSsAge').value) : 67;
+  const spSsBases = {62:spSs62, 67:spSs67, 70:spSs70};
+
+  // Lookup SS base amounts
+  const ssBases = {62:ss62, 67:ss67, 70:ss70};
+  const ssBase = ssBases[ssAge] || 0;
+
+  // RMD start age (SECURE 2.0)
+  const personBY = 2026 - personAge;
+  const personRmdAge = personBY >= 1960 ? 75 : 73;
+
+  // Running balances
+  let tradBal = traditional;
+  let rothBal = roth;
+  let taxBal  = taxable;
+
+  const rows = [];
+
+  for(let age = personAge; age <= 100; age++){
+    const year = 2026 + (age - personAge);
+    const yr   = age - personAge; // years from 2026
+    const infl = Math.pow(1 + inflRate, yr);
+
+    // ── Person pension ──
+    let pensionInc = 0;
+    if(age >= pensionStart){
+      const pensYr = age - pensionStart;
+      pensionInc = pensionCola
+        ? pension * Math.pow(1 + inflRate, yr)
+        : pension;
+    }
+
+    // ── Person SS ──
+    let ssInc = 0;
+    if(age >= ssAge && ssBase > 0){
+      ssInc = ssBase * Math.pow(1 + ssColaRate, age - ssAge);
+    }
+
+    // ── Spouse pension ──
+    let spPensionInc = 0;
+    if(hasSpouse && spAge !== null){
+      const spCurrentAge = spAge + yr;
+      if(spCurrentAge >= spPensionStart){
+        spPensionInc = spPensionCola
+          ? spPension * Math.pow(1 + inflRate, yr)
+          : spPension;
+      }
+    }
+
+    // ── Spouse SS ──
+    let spSsInc = 0;
+    if(hasSpouse && spAge !== null){
+      const spCurrentAge = spAge + yr;
+      const spSsBase = spSsBases[spSsAge] || 0;
+      if(spCurrentAge >= spSsAge && spSsBase > 0){
+        spSsInc = spSsBase * Math.pow(1 + ssColaRate, spCurrentAge - spSsAge);
+      }
+    }
+
+    // ── Investment growth ──
+    const preTrad = tradBal * (1 + returnRate);
+    const preRoth = rothBal * (1 + returnRate);
+    const preTax  = taxBal  * (1 + returnRate);
+
+    // ── RMD (based on beginning-of-year = prior year-end balance) ──
+    let rmd = 0;
+    if(age >= personRmdAge && tradBal > 0){
+      rmd = tradBal / getRmdFactor(age);
+    }
+
+    // ── Desired withdrawal ──
+    let desired = 0;
+    if(wdType === 'fixed')     desired = wdAmt * infl;
+    else if(wdType === 'rate') desired = (preTrad + preRoth + preTax) * wdPct;
+    // rmd-only: desired stays 0
+
+    // ── Execute withdrawals ──
+    let tradWd = 0, rothWd = 0, taxWd = 0;
+
+    // Step 1: mandatory RMD from traditional
+    tradWd = Math.min(rmd, preTrad);
+    let need = Math.max(desired - tradWd, 0);
+
+    // Step 2: taxable
+    taxWd = Math.min(need, preTax);
+    need -= taxWd;
+
+    // Step 3: Roth
+    rothWd = Math.min(need, preRoth);
+    need -= rothWd;
+
+    // Step 4: more from traditional if still needed
+    const addlTrad = Math.min(need, preTrad - tradWd);
+    tradWd += addlTrad;
+
+    const investWd = tradWd + rothWd + taxWd;
+
+    // ── Update balances ──
+    tradBal = Math.max(0, preTrad - tradWd);
+    rothBal = Math.max(0, preRoth - rothWd);
+    taxBal  = Math.max(0, preTax  - taxWd);
+    const totalPort = tradBal + rothBal + taxBal;
+
+    // ── Income totals ──
+    const totalSs      = ssInc + spSsInc;
+    const totalPension = pensionInc + spPensionInc;
+    const totalIncome  = totalPension + totalSs + investWd;
+
+    // ── Federal tax estimate ──
+    // Taxable: pension + trad wd + taxable wd + SS taxable portion
+    const otherIncome = totalPension + tradWd + taxWd;
+    const ssTaxable   = ssTaxableAmount(totalSs, otherIncome, filingStatus);
+    const grossTaxable = otherIncome + ssTaxable; // roth is tax-free
+
+    // Count persons age 65+
+    let age65count = age >= 65 ? 1 : 0;
+    if(hasSpouse && spAge !== null && (spAge + yr) >= 65) age65count++;
+
+    const estTax    = estimateTax(grossTaxable, filingStatus, infl, age65count);
+    const afterTax  = Math.max(0, totalIncome - estTax);
+
+    rows.push({
+      year, age,
+      spouseAge: hasSpouse && spAge !== null ? spAge + yr : null,
+      pensionInc, spPensionInc, totalPension,
+      ssInc, spSsInc, totalSs,
+      rmd, tradWd, rothWd, taxWd, investWd,
+      totalIncome, estTax, afterTax,
+      tradBal, rothBal, taxBal, totalPort
+    });
+  }
+
+  renderResults(rows, hasSpouse);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderResults(rows, hasSpouse){
+  // Summary cards
+  const first = rows[0];
+  const at70  = rows.find(r => r.age === 70) || rows[rows.length-1];
+  const at80  = rows.find(r => r.age === 80);
+  const at90  = rows.find(r => r.age === 90);
+  const initPort = first.tradBal + first.rothBal + first.taxBal +
+                   first.investWd; // approximate initial
+
+  const sumCards = [
+    { v: fmt(first.totalIncome), l: `Income in ${first.year} (Age ${first.age})` },
+    { v: fmt(at70 ? at70.totalIncome : 0),  l: 'Income at Age 70' },
+    { v: fmt(at80 ? at80.totalIncome : 0),  l: 'Income at Age 80' },
+    { v: fmt(at90 ? at90.totalIncome : 0),  l: 'Income at Age 90' },
+    { v: fmt(first.totalPort + first.investWd), l: 'Starting Portfolio' },
+    { v: fmt(at70 ? at70.totalPort : 0),    l: 'Portfolio at Age 70' },
+    { v: fmt(at80 ? at80.totalPort : 0),    l: 'Portfolio at Age 80' },
+    { v: fmt(rows[rows.length-1].totalPort), l: 'Portfolio at Age 100' },
+  ];
+  g('sumGrid').innerHTML = sumCards.map(c =>
+    `<div class="sum-card"><div class="sv">${c.v}</div><div class="sl">${c.l}</div></div>`
+  ).join('');
+
+  // Determine which rows to display
+  const display = rows.filter(r => r.age <= 70 || r.age % 5 === 0);
+
+  // Build table header
+  const spCol = hasSpouse;
+  let th = `<tr>
+    <th class="tc">Year</th>
+    <th class="tc">Age${spCol ? ' / Sp.' : ''}</th>
+    <th data-grp="pension">Pension</th>
+    ${spCol ? '<th data-grp="pension">Sp. Pension</th>' : ''}
+    <th data-grp="ss">${spCol ? 'Person SS' : 'Soc. Security'}</th>
+    ${spCol ? '<th data-grp="ss">Spouse SS</th>' : ''}
+    ${spCol ? '<th data-grp="ss">Total SS</th>' : ''}
+    <th data-grp="invest">Invest. WD</th>
+    <th data-grp="rmd" style="display:none">RMD</th>
+    <th data-grp="accts" style="display:none">Trad. WD</th>
+    <th data-grp="accts" style="display:none">Roth WD</th>
+    <th data-grp="accts" style="display:none">Taxable WD</th>
+    <th data-grp="total">Total Income</th>
+    <th data-grp="tax">Est. Fed. Tax</th>
+    <th data-grp="tax">Eff. Rate</th>
+    <th data-grp="aftertax">After-Tax</th>
+    <th data-grp="port">Portfolio</th>
+    <th data-grp="accts" style="display:none">Trad. Bal.</th>
+    <th data-grp="accts" style="display:none">Roth Bal.</th>
+    <th data-grp="accts" style="display:none">Taxable Bal.</th>
+  </tr>`;
+  g('tHead').innerHTML = th;
+
+  // Build table body
+  let tbody = '';
+  for(const r of display){
+    const isAge70 = r.age === 70;
+    const portClass = r.totalPort === 0 ? ' depleted' : '';
+    const ageDisplay = spCol && r.spouseAge !== null
+      ? `${r.age} / ${r.spouseAge}`
+      : `${r.age}`;
+
+    tbody += `<tr class="${isAge70 ? 'age70' : ''}">
+      <td class="tc">${r.year}</td>
+      <td class="tc">${ageDisplay}</td>
+      <td data-grp="pension">${r.totalPension > 0 ? fmt(r.totalPension) : '<span class="zero">—</span>'}</td>
+      ${spCol ? `<td data-grp="pension">${r.spPensionInc > 0 ? fmt(r.spPensionInc) : '<span class="zero">—</span>'}</td>` : ''}
+      <td data-grp="ss">${r.ssInc > 0 ? fmt(r.ssInc) : '<span class="zero">—</span>'}</td>
+      ${spCol ? `<td data-grp="ss">${r.spSsInc > 0 ? fmt(r.spSsInc) : '<span class="zero">—</span>'}</td>` : ''}
+      ${spCol ? `<td data-grp="ss">${r.totalSs > 0 ? fmt(r.totalSs) : '<span class="zero">—</span>'}</td>` : ''}
+      <td data-grp="invest">${r.investWd > 0 ? fmt(r.investWd) : '<span class="zero">—</span>'}</td>
+      <td data-grp="rmd" style="display:none">${r.rmd > 0 ? fmt(r.rmd) : '<span class="zero">—</span>'}</td>
+      <td data-grp="accts" style="display:none">${r.tradWd > 0 ? fmt(r.tradWd) : '<span class="zero">—</span>'}</td>
+      <td data-grp="accts" style="display:none">${r.rothWd > 0 ? fmt(r.rothWd) : '<span class="zero">—</span>'}</td>
+      <td data-grp="accts" style="display:none">${r.taxWd  > 0 ? fmt(r.taxWd)  : '<span class="zero">—</span>'}</td>
+      <td data-grp="total" style="font-weight:600">${fmt(r.totalIncome)}</td>
+      <td data-grp="tax">${fmt(r.estTax)}</td>
+      <td data-grp="tax">${r.totalIncome > 0 ? fmtPct(r.estTax / r.totalIncome) : '—'}</td>
+      <td data-grp="aftertax" style="font-weight:600;color:#16a34a">${fmt(r.afterTax)}</td>
+      <td data-grp="port" class="${portClass}">${r.totalPort > 0 ? fmt(r.totalPort) : '<span class="depleted">Depleted</span>'}</td>
+      <td data-grp="accts" style="display:none">${fmt(r.tradBal)}</td>
+      <td data-grp="accts" style="display:none">${fmt(r.rothBal)}</td>
+      <td data-grp="accts" style="display:none">${fmt(r.taxBal)}</td>
+    </tr>`;
+  }
+  g('tBody').innerHTML = tbody;
+
+  // Restore column visibility from toggle buttons
+  document.querySelectorAll('#colBar .cbtn').forEach(btn => {
+    if(!btn.classList.contains('on')){
+      document.querySelectorAll('[data-grp='+btn.dataset.col+']').forEach(el=>{
+        el.style.display = 'none';
+      });
+    }
+  });
+
+  g('results').style.display = 'block';
+  g('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+</body>
+</html>
