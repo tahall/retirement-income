@@ -202,7 +202,7 @@ tbody tr.age70{border-top:3px solid #3b82f6}
   </div>
 
   <div class="info-box">
-    Withdrawals use tax-efficient ordering: <strong>Taxable → Roth → Traditional</strong> (beyond RMDs).
+    Withdrawals use tax-efficient ordering: <strong>Taxable → Traditional → Roth</strong> (beyond RMDs). Roth is drawn last to maximize tax-free growth.
     RMDs begin at age&nbsp;73 (born 1951–1959) or age&nbsp;75 (born 1960+) per SECURE Act 2.0.
   </div>
 </div>
@@ -595,6 +595,7 @@ function calculate(){
     // rmd-only: desired stays 0
 
     // ── Execute withdrawals ──
+    // Order: RMD from Traditional (mandatory) → Taxable → Traditional → Roth (last)
     let tradWd = 0, rothWd = 0, taxWd = 0;
 
     // Step 1: mandatory RMD from traditional
@@ -605,13 +606,13 @@ function calculate(){
     taxWd = Math.min(need, preTax);
     need -= taxWd;
 
-    // Step 3: Roth
-    rothWd = Math.min(need, preRoth);
-    need -= rothWd;
-
-    // Step 4: more from traditional if still needed
+    // Step 3: more from traditional
     const addlTrad = Math.min(need, preTrad - tradWd);
     tradWd += addlTrad;
+    need -= addlTrad;
+
+    // Step 4: Roth last
+    rothWd = Math.min(need, preRoth);
 
     const investWd = tradWd + rothWd + taxWd;
 
