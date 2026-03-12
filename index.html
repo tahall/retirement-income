@@ -80,19 +80,35 @@ tbody tr.age70{border-top:3px solid #3b82f6}
       <input type="number" id="personAge" min="18" max="99" value="55">
     </div>
     <div class="fg">
-      <label for="pension">Annual Pension</label>
+      <label for="pensionType">Pension Type</label>
+      <select id="pensionType" onchange="togglePensionType('','')">
+        <option value="regular">Regular Pension</option>
+        <option value="fers">FERS (Federal)</option>
+        <option value="none">No Pension</option>
+      </select>
+    </div>
+    <div class="fg" id="pensionAmtGrp">
+      <label for="pension">Base Annuity (Annual)</label>
       <div class="pfx"><span>$</span><input type="number" id="pension" min="0" value="0"></div>
     </div>
-    <div class="fg">
+    <div class="fg" id="pensionStartGrp">
       <label for="pensionStart">Pension Starts at Age</label>
       <input type="number" id="pensionStart" min="40" max="80" value="62">
     </div>
-    <div class="fg">
+    <div class="fg" id="pensionColaGrp">
       <label>Pension COLA</label>
       <label class="ro" style="margin-top:.55rem">
         <input type="checkbox" id="pensionCola"> Adjusts for inflation
       </label>
     </div>
+    <div class="fg" id="fersSuppGrp" style="display:none">
+      <label for="fersSupp">FERS Supplement (Annual)</label>
+      <div class="pfx"><span>$</span><input type="number" id="fersSupp" min="0" value="0"></div>
+      <span class="note">Paid from retirement to age 62, no COLA</span>
+    </div>
+  </div>
+  <div id="fersNote" style="display:none;margin-top:.85rem;font-size:.8rem;color:#1e40af;background:#eff6ff;padding:.6rem .85rem;border-radius:6px;border-left:3px solid #3b82f6">
+    <strong>FERS rules applied:</strong> Base annuity is fixed with no COLA until age 62, then receives COLA (using your inflation rate). The supplement is paid from retirement through age 61 with no COLA and stops at 62.
   </div>
 
   <div class="sub-title">Social Security Benefits (Annual Amount)</div>
@@ -207,17 +223,33 @@ tbody tr.age70{border-top:3px solid #3b82f6}
         <input type="number" id="spAge" min="18" max="99" value="53">
       </div>
       <div class="fg">
-        <label for="spPension">Annual Pension</label>
+        <label for="spPensionType">Pension Type</label>
+        <select id="spPensionType" onchange="togglePensionType('sp','Sp')">
+          <option value="regular">Regular Pension</option>
+          <option value="fers">FERS (Federal)</option>
+          <option value="none">No Pension</option>
+        </select>
+      </div>
+      <div class="fg" id="spPensionAmtGrp">
+        <label for="spPension">Base Annuity (Annual)</label>
         <div class="pfx"><span>$</span><input type="number" id="spPension" min="0" value="0"></div>
       </div>
-      <div class="fg">
+      <div class="fg" id="spPensionStartGrp">
         <label for="spPensionStart">Pension Starts at Age</label>
         <input type="number" id="spPensionStart" min="40" max="80" value="62">
       </div>
-      <div class="fg">
+      <div class="fg" id="spPensionColaGrp">
         <label>Pension COLA</label>
         <label class="ro" style="margin-top:.55rem"><input type="checkbox" id="spPensionCola"> Adjusts for inflation</label>
       </div>
+      <div class="fg" id="spFersSuppGrp" style="display:none">
+        <label for="spFersSupp">FERS Supplement (Annual)</label>
+        <div class="pfx"><span>$</span><input type="number" id="spFersSupp" min="0" value="0"></div>
+        <span class="note">Paid from retirement to age 62, no COLA</span>
+      </div>
+    </div>
+    <div id="spFersNote" style="display:none;margin-top:.85rem;font-size:.8rem;color:#1e40af;background:#eff6ff;padding:.6rem .85rem;border-radius:6px;border-left:3px solid #3b82f6">
+      <strong>FERS rules applied:</strong> Base annuity is fixed with no COLA until age 62, then receives COLA. The supplement is paid from retirement through age 61 with no COLA and stops at 62.
     </div>
     <div class="sub-title">Spouse Social Security (Annual Amount)</div>
     <div class="grid">
@@ -370,6 +402,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── UI helpers ─────────────────────────────────────────────────────────────
+function togglePensionType(prefix, Prefix){
+  const type = g(prefix+'pensionType').value;
+  const isFers = type === 'fers';
+  const isNone = type === 'none';
+  const hide = isNone;
+  g(prefix+'pensionAmtGrp').style.display    = hide ? 'none' : '';
+  g(prefix+'pensionStartGrp').style.display  = hide ? 'none' : '';
+  g(prefix+'pensionColaGrp').style.display   = (hide || isFers) ? 'none' : '';
+  g(prefix+'fersSuppGrp').style.display      = isFers ? '' : 'none';
+  g(prefix+'fersNote').style.display         = isFers ? '' : 'none';
+  if(isFers) g(prefix+'pensionAmtGrp').querySelector('label').textContent = 'Base Annuity (Annual)';
+  else       g(prefix+'pensionAmtGrp').querySelector('label').textContent = 'Annual Pension';
+}
 function toggleSpouse(){
   document.getElementById('spouseInputs').style.display =
     document.getElementById('spouseOn').checked ? '' : 'none';
@@ -410,9 +455,11 @@ function gv(id, fallback=0){ return parseFloat(String(g(id).value).replace(/[^0-
 
 function calculate(){
   const personAge   = gv('personAge', 55);
+  const pensionType = g('pensionType').value;
   const pension     = gv('pension');
   const pensionStart= gv('pensionStart', 62);
   const pensionCola = g('pensionCola').checked;
+  const fersSupp    = pensionType === 'fers' ? gv('fersSupp') : 0;
   const ss62  = gv('ss62');
   const ss67  = gv('ss67');
   const ss70  = gv('ss70');
@@ -431,9 +478,11 @@ function calculate(){
 
   // Spouse
   const spAge        = hasSpouse ? gv('spAge', 53) : null;
-  const spPension    = hasSpouse ? gv('spPension') : 0;
+  const spPensionType  = hasSpouse ? g('spPensionType').value : 'none';
+  const spPension      = hasSpouse ? gv('spPension') : 0;
   const spPensionStart = hasSpouse ? gv('spPensionStart', 62) : 62;
   const spPensionCola  = hasSpouse ? g('spPensionCola').checked : false;
+  const spFersSupp     = hasSpouse && spPensionType === 'fers' ? gv('spFersSupp') : 0;
   const spSs62  = hasSpouse ? gv('spSs62') : 0;
   const spSs67  = hasSpouse ? gv('spSs67') : 0;
   const spSs70  = hasSpouse ? gv('spSs70') : 0;
@@ -470,11 +519,19 @@ function calculate(){
 
     // ── Person pension ──
     let pensionInc = 0;
-    if(age >= pensionStart){
-      const pensYr = age - pensionStart;
-      pensionInc = pensionCola
-        ? pension * Math.pow(1 + inflRate, yr)
-        : pension;
+    if(pensionType !== 'none' && age >= pensionStart){
+      if(pensionType === 'fers'){
+        // FERS base annuity: fixed until 62, then COLA from 62 onward
+        pensionInc = age < 62
+          ? pension
+          : pension * Math.pow(1 + inflRate, age - 62);
+        // FERS supplement: fixed, paid from retirement start through age 61, no COLA
+        if(age < 62) pensionInc += fersSupp;
+      } else {
+        pensionInc = pensionCola
+          ? pension * Math.pow(1 + inflRate, yr)
+          : pension;
+      }
     }
 
     // ── Person SS ──
@@ -485,12 +542,19 @@ function calculate(){
 
     // ── Spouse pension ──
     let spPensionInc = 0;
-    if(hasSpouse && spAge !== null){
+    if(hasSpouse && spAge !== null && spPensionType !== 'none'){
       const spCurrentAge = spAge + yr;
       if(spCurrentAge >= spPensionStart){
-        spPensionInc = spPensionCola
-          ? spPension * Math.pow(1 + inflRate, yr)
-          : spPension;
+        if(spPensionType === 'fers'){
+          spPensionInc = spCurrentAge < 62
+            ? spPension
+            : spPension * Math.pow(1 + inflRate, spCurrentAge - 62);
+          if(spCurrentAge < 62) spPensionInc += spFersSupp;
+        } else {
+          spPensionInc = spPensionCola
+            ? spPension * Math.pow(1 + inflRate, yr)
+            : spPension;
+        }
       }
     }
 
@@ -616,62 +680,79 @@ function renderResults(rows, hasSpouse){
   // Determine which rows to display
   const display = rows.filter(r => r.age <= 70 || r.age % 5 === 0);
 
+  // Only show a column if it has at least one non-zero value across all rows
+  const has = {
+    pension:   rows.some(r => r.totalPension > 0),
+    spPension: hasSpouse && rows.some(r => r.spPensionInc > 0),
+    personSs:  rows.some(r => r.ssInc > 0),
+    spSs:      hasSpouse && rows.some(r => r.spSsInc > 0),
+    invest:    rows.some(r => r.investWd > 0),
+    rmd:       rows.some(r => r.rmd > 0),
+    tradWd:    rows.some(r => r.tradWd > 0),
+    rothWd:    rows.some(r => r.rothWd > 0),
+    taxWd:     rows.some(r => r.taxWd > 0),
+    tradBal:   rows.some(r => r.tradBal > 0),
+    rothBal:   rows.some(r => r.rothBal > 0),
+    taxBal:    rows.some(r => r.taxBal > 0),
+  };
+  // Show combined SS column only when both person and spouse have SS
+  const showTotalSs = hasSpouse && has.personSs && has.spSs;
+
   // Build table header
-  const spCol = hasSpouse;
-  let th = `<tr>
+  const th = `<tr>
     <th class="tc">Year</th>
-    <th class="tc">Age${spCol ? ' / Sp.' : ''}</th>
-    <th data-grp="pension">Pension</th>
-    ${spCol ? '<th data-grp="pension">Sp. Pension</th>' : ''}
-    <th data-grp="ss">${spCol ? 'Person SS' : 'Soc. Security'}</th>
-    ${spCol ? '<th data-grp="ss">Spouse SS</th>' : ''}
-    ${spCol ? '<th data-grp="ss">Total SS</th>' : ''}
-    <th data-grp="invest">Invest. WD</th>
-    <th data-grp="rmd" style="display:none">RMD</th>
-    <th data-grp="accts" style="display:none">Trad. WD</th>
-    <th data-grp="accts" style="display:none">Roth WD</th>
-    <th data-grp="accts" style="display:none">Taxable WD</th>
+    <th class="tc">Age${hasSpouse ? ' / Sp.' : ''}</th>
+    ${has.pension    ? '<th data-grp="pension">Pension</th>' : ''}
+    ${has.spPension  ? '<th data-grp="pension">Sp. Pension</th>' : ''}
+    ${has.personSs   ? `<th data-grp="ss">${hasSpouse ? 'Person SS' : 'Soc. Security'}</th>` : ''}
+    ${has.spSs       ? '<th data-grp="ss">Spouse SS</th>' : ''}
+    ${showTotalSs    ? '<th data-grp="ss">Total SS</th>' : ''}
+    ${has.invest     ? '<th data-grp="invest">Invest. WD</th>' : ''}
+    ${has.rmd        ? '<th data-grp="rmd" style="display:none">RMD</th>' : ''}
+    ${has.tradWd     ? '<th data-grp="accts" style="display:none">Trad. WD</th>' : ''}
+    ${has.rothWd     ? '<th data-grp="accts" style="display:none">Roth WD</th>' : ''}
+    ${has.taxWd      ? '<th data-grp="accts" style="display:none">Taxable WD</th>' : ''}
     <th data-grp="total">Total Income</th>
     <th data-grp="tax">Est. Fed. Tax</th>
     <th data-grp="tax">Eff. Rate</th>
     <th data-grp="aftertax">After-Tax</th>
     <th data-grp="port">Portfolio</th>
-    <th data-grp="accts" style="display:none">Trad. Bal.</th>
-    <th data-grp="accts" style="display:none">Roth Bal.</th>
-    <th data-grp="accts" style="display:none">Taxable Bal.</th>
+    ${has.tradBal    ? '<th data-grp="accts" style="display:none">Trad. Bal.</th>' : ''}
+    ${has.rothBal    ? '<th data-grp="accts" style="display:none">Roth Bal.</th>' : ''}
+    ${has.taxBal     ? '<th data-grp="accts" style="display:none">Taxable Bal.</th>' : ''}
   </tr>`;
   g('tHead').innerHTML = th;
 
   // Build table body
+  const z = n => n > 0 ? fmt(n) : '<span class="zero">—</span>';
   let tbody = '';
   for(const r of display){
     const isAge70 = r.age === 70;
     const portClass = r.totalPort === 0 ? ' depleted' : '';
-    const ageDisplay = spCol && r.spouseAge !== null
-      ? `${r.age} / ${r.spouseAge}`
-      : `${r.age}`;
+    const ageDisplay = hasSpouse && r.spouseAge !== null
+      ? `${r.age} / ${r.spouseAge}` : `${r.age}`;
 
     tbody += `<tr class="${isAge70 ? 'age70' : ''}">
       <td class="tc">${r.year}</td>
       <td class="tc">${ageDisplay}</td>
-      <td data-grp="pension">${r.totalPension > 0 ? fmt(r.totalPension) : '<span class="zero">—</span>'}</td>
-      ${spCol ? `<td data-grp="pension">${r.spPensionInc > 0 ? fmt(r.spPensionInc) : '<span class="zero">—</span>'}</td>` : ''}
-      <td data-grp="ss">${r.ssInc > 0 ? fmt(r.ssInc) : '<span class="zero">—</span>'}</td>
-      ${spCol ? `<td data-grp="ss">${r.spSsInc > 0 ? fmt(r.spSsInc) : '<span class="zero">—</span>'}</td>` : ''}
-      ${spCol ? `<td data-grp="ss">${r.totalSs > 0 ? fmt(r.totalSs) : '<span class="zero">—</span>'}</td>` : ''}
-      <td data-grp="invest">${r.investWd > 0 ? fmt(r.investWd) : '<span class="zero">—</span>'}</td>
-      <td data-grp="rmd" style="display:none">${r.rmd > 0 ? fmt(r.rmd) : '<span class="zero">—</span>'}</td>
-      <td data-grp="accts" style="display:none">${r.tradWd > 0 ? fmt(r.tradWd) : '<span class="zero">—</span>'}</td>
-      <td data-grp="accts" style="display:none">${r.rothWd > 0 ? fmt(r.rothWd) : '<span class="zero">—</span>'}</td>
-      <td data-grp="accts" style="display:none">${r.taxWd  > 0 ? fmt(r.taxWd)  : '<span class="zero">—</span>'}</td>
+      ${has.pension    ? `<td data-grp="pension">${z(r.totalPension)}</td>` : ''}
+      ${has.spPension  ? `<td data-grp="pension">${z(r.spPensionInc)}</td>` : ''}
+      ${has.personSs   ? `<td data-grp="ss">${z(r.ssInc)}</td>` : ''}
+      ${has.spSs       ? `<td data-grp="ss">${z(r.spSsInc)}</td>` : ''}
+      ${showTotalSs    ? `<td data-grp="ss">${z(r.totalSs)}</td>` : ''}
+      ${has.invest     ? `<td data-grp="invest">${z(r.investWd)}</td>` : ''}
+      ${has.rmd        ? `<td data-grp="rmd" style="display:none">${z(r.rmd)}</td>` : ''}
+      ${has.tradWd     ? `<td data-grp="accts" style="display:none">${z(r.tradWd)}</td>` : ''}
+      ${has.rothWd     ? `<td data-grp="accts" style="display:none">${z(r.rothWd)}</td>` : ''}
+      ${has.taxWd      ? `<td data-grp="accts" style="display:none">${z(r.taxWd)}</td>` : ''}
       <td data-grp="total" style="font-weight:600">${fmt(r.totalIncome)}</td>
       <td data-grp="tax">${fmt(r.estTax)}</td>
       <td data-grp="tax">${r.totalIncome > 0 ? fmtPct(r.estTax / r.totalIncome) : '—'}</td>
       <td data-grp="aftertax" style="font-weight:600;color:#16a34a">${fmt(r.afterTax)}</td>
       <td data-grp="port" class="${portClass}">${r.totalPort > 0 ? fmt(r.totalPort) : '<span class="depleted">Depleted</span>'}</td>
-      <td data-grp="accts" style="display:none">${fmt(r.tradBal)}</td>
-      <td data-grp="accts" style="display:none">${fmt(r.rothBal)}</td>
-      <td data-grp="accts" style="display:none">${fmt(r.taxBal)}</td>
+      ${has.tradBal    ? `<td data-grp="accts" style="display:none">${fmt(r.tradBal)}</td>` : ''}
+      ${has.rothBal    ? `<td data-grp="accts" style="display:none">${fmt(r.rothBal)}</td>` : ''}
+      ${has.taxBal     ? `<td data-grp="accts" style="display:none">${fmt(r.taxBal)}</td>` : ''}
     </tr>`;
   }
   g('tBody').innerHTML = tbody;
