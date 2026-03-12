@@ -188,6 +188,7 @@ tbody tr.age70{border-top:3px solid #3b82f6}
   <div class="radio-row">
     <label class="ro"><input type="radio" name="wdType" value="fixed" id="wdFixed" checked onchange="updateWdUI()"> Fixed Amount (inflation-adjusted)</label>
     <label class="ro"><input type="radio" name="wdType" value="rate" id="wdRate" onchange="updateWdUI()"> Safe Withdrawal Rate</label>
+    <label class="ro"><input type="radio" name="wdType" value="min" id="wdMin" onchange="updateWdUI()"> Minimum Income Target</label>
     <label class="ro"><input type="radio" name="wdType" value="rmd" id="wdRmd" onchange="updateWdUI()"> RMDs Only</label>
   </div>
   <div class="grid">
@@ -198,6 +199,11 @@ tbody tr.age70{border-top:3px solid #3b82f6}
     <div class="fg" id="wdRateGrp" style="display:none">
       <label for="wdPct">Withdrawal Rate</label>
       <div class="sfx"><input type="number" id="wdPct" min="0" max="20" step="0.1" value="4"><span>%</span></div>
+    </div>
+    <div class="fg" id="wdMinGrp" style="display:none">
+      <label for="wdMinAmt">Minimum Total Income (2026 $)</label>
+      <div class="pfx"><span>$</span><input type="number" id="wdMinAmt" min="0" value="80000"></div>
+      <span class="note">Withdrawals fill the gap between guaranteed income and this target, inflation-adjusted each year</span>
     </div>
   </div>
 
@@ -432,6 +438,7 @@ function updateWdUI(){
   const v = document.querySelector('input[name=wdType]:checked').value;
   document.getElementById('wdAmtGrp').style.display  = v === 'fixed' ? '' : 'none';
   document.getElementById('wdRateGrp').style.display = v === 'rate'  ? '' : 'none';
+  document.getElementById('wdMinGrp').style.display  = v === 'min'   ? '' : 'none';
 }
 function fmt(n, decimals=0){
   if(n === null || n === undefined) return '—';
@@ -474,6 +481,7 @@ function calculate(){
   const wdType      = document.querySelector('input[name=wdType]:checked').value;
   const wdAmt       = gv('wdAmt', 0);
   const wdPct       = gv('wdPct', 4) / 100;
+  const wdMinAmt    = gv('wdMinAmt', 0);
   const hasSpouse   = g('spouseOn').checked;
 
   // Spouse
@@ -592,6 +600,10 @@ function calculate(){
     let desired = 0;
     if(wdType === 'fixed')     desired = wdAmt * infl;
     else if(wdType === 'rate') desired = (preTrad + preRoth + preTax) * wdPct;
+    else if(wdType === 'min'){
+      const guaranteed = pensionInc + spPensionInc + ssInc + spSsInc;
+      desired = Math.max(0, wdMinAmt * infl - guaranteed);
+    }
     // rmd-only: desired stays 0
 
     // ── Execute withdrawals ──
